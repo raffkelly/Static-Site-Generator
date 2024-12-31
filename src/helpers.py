@@ -1,6 +1,7 @@
-from textnode import *
 from htmlnode import *
+from textnode import *
 import re
+import os
 
 
 def split_nodes_delimiter(old_nodes, delimiter, text_type):
@@ -8,14 +9,19 @@ def split_nodes_delimiter(old_nodes, delimiter, text_type):
     for old_node in old_nodes:
         if old_node.text_type != TextType.TEXT:
             new_nodes.append(old_node)
-        else:
-            blocks = old_node.text.split(delimiter)
-            if len(blocks) % 2 == 0: raise Exception("unmatched format character")
-            for i in range(len(blocks)):
-                if i % 2 == 0:
-                    new_nodes.append(TextNode(blocks[i], TextType.TEXT))
-                else:
-                    new_nodes.append(TextNode(blocks[i], text_type))
+            continue
+        split_nodes = []
+        sections = old_node.text.split(delimiter)
+        if len(sections) % 2 == 0:
+            raise ValueError("Invalid markdown, formatted section not closed")
+        for i in range(len(sections)):
+            if sections[i] == "":
+                continue
+            if i % 2 == 0:
+                split_nodes.append(TextNode(sections[i], TextType.TEXT))
+            else:
+                split_nodes.append(TextNode(sections[i], text_type))
+        new_nodes.extend(split_nodes)
     return new_nodes
 
 def extract_markdown_images(text):
@@ -43,7 +49,7 @@ def split_nodes_link(old_nodes):
                 new_nodes.append(TextNode(link_text, TextType.LINK, link_url))
                 if split_text[1] and i < (len(links)-1):
                     working_text = split_text[1]     
-                elif split_text[1] and i == (len(links)-1):
+                elif split_text[1] and i == (len(links)-1) and split_text[1] != "":
                     new_nodes.append(TextNode(split_text[1], TextType.TEXT))
     return new_nodes
 
@@ -68,7 +74,7 @@ def split_nodes_image(old_nodes):
                 new_nodes.append(TextNode(image_text, TextType.IMAGE, image_url))
                 if split_text[1] and i < (len(images)-1):
                     working_text = split_text[1]     
-                elif split_text[1] and i == (len(images)-1):
+                elif split_text[1] and i == (len(images)-1) and split_text[1] != "":
                     new_nodes.append(TextNode(split_text[1], TextType.TEXT))
     return new_nodes
 
@@ -81,23 +87,6 @@ def text_to_textnodes(text):
     final = split_nodes_image(fourthstep)
     return final
 
-def markdown_to_blocks(markdown):
-    split_doc = markdown.split("\n")
-    blocked_doc = []
-    block = ""
-    for i in range(len(split_doc)):
-        split_doc[i] = split_doc[i].strip(" ")
-        if split_doc[i] == "":
-            block = block.rstrip("\n")
-            blocked_doc.append(block)
-            block = ""
-        elif split_doc[i] == split_doc[-1]:
-            block += split_doc[i]
-            blocked_doc.append(block)
-        elif split_doc[i] != "":
-            block += split_doc[i] + "\n"
-    blocked_doc = list(filter(lambda x: x != "", blocked_doc))
-    return blocked_doc
 
 
 def block_to_block_type(block):
@@ -149,3 +138,10 @@ def block_to_block_type(block):
         return "ordered_list"
     
     return "paragraph"
+
+def extract_title(markdown):
+    markdown = markdown.rstrip()
+    for line in markdown.splitlines():
+        if line[0:2] == "# ":
+            return line[2:]
+    raise Exception("No title found in markdown document.")    

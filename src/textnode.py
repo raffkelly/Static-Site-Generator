@@ -35,6 +35,3 @@ def text_node_to_html_node(text_node):
             return LeafNode("img", "", {"src": text_node.url, "alt": text_node.text})
         case _:
             raise Exception("Invalid text type")
-
-
-#TextNode("This is a text node", TextType.BOLD, "https://www.boot.dev")

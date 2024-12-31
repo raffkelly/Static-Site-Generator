@@ -1,6 +1,7 @@
 import unittest
 from helpers import *
 from textnode import *
+from mdtohtml import *
 
 class TestOldNodesToTextNodes(unittest.TestCase):
 
@@ -25,6 +26,18 @@ class TestOldNodesToTextNodes(unittest.TestCase):
     TextNode(" words", TextType.TEXT)
 ]
         self.assertEqual(new_nodes, expected_new_nodes, "old nodes not split properly")
+
+
+
+    def test_problem_case(self):
+        node = TextNode("* Disney *didn't ruin it*", TextType.TEXT)
+        new_nodes = split_nodes_delimiter([node], "*", TextType.ITALIC)
+        expected_new_nodes = [
+    TextNode("*", TextType.TEXT),
+    TextNode(" Disney ", TextType.TEXT),
+    TextNode("didn't ruin it", TextType.ITALIC),
+]
+        self.assertEqual(new_nodes, expected_new_nodes, "hard one not split properly")
 
 
     def test_bold_and_code_old_node(self):
@@ -178,6 +191,12 @@ This is a paragraph of text. It has some **bold** and *italic* words inside of i
         expected = ['# This is a heading']
         self.assertEqual(blocked, expected)
 
+    #def test_markdown_to_blocks_uo(self):
+    #    markdown = '* This is a *heading*'
+    #    blocked = markdown_to_blocks(markdown)
+    #    expected = ['* This is a heading']
+    #    self.assertEqual(blocked, expected)
+
     def test_block_to_block_type_ordered_list(self):
         block = """1. one
         2. two
@@ -185,6 +204,22 @@ This is a paragraph of text. It has some **bold** and *italic* words inside of i
         4. four"""
         block_type = block_to_block_type(block)
         self.assertEqual(block_type, "ordered_list")
+class GetTitle(unittest.TestCase):
+
+    def test_simple_title(self):
+        markdown = "# Hello"
+        title = extract_title(markdown)
+        self.assertEqual(title, "Hello")
+    
+    def test_longer_title(self):
+        markdown = "# hello hello hello hello "
+        title = extract_title(markdown)
+        self.assertEqual(title, "hello hello hello hello")
+    
+    def test_title_failure(self):
+        markdown = " # hello"
+        with self.assertRaises(Exception):
+            title = extract_title(markdown)
 
 
 if __name__ == "__main__":
